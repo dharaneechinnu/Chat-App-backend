@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGO_URL)
 
 // Middleware for CORS
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://chat-app-frontend-peach-three.vercel.app/');
+  res.setHeader('Access-Control-Allow-Origin', 'https://chat-app-frontends-yla0.onrender.com');
   next();
 });
 
@@ -45,7 +45,7 @@ const server = app.listen(process.env.PORT,()=>{
 
 const io = socket(server, {
   cors: {
-      origin: "https://chat-app-frontend-peach-three.vercel.app/", // Allow requests from this origin
+      origin: "https://chat-app-frontends-yla0.onrender.com", // Allow requests from this origin
       methods: ["GET", "POST"] // Allow these HTTP methods
   }
 });
