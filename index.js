@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = express();
+const socket = require('socket.io');
 dotenv.config();
 
 // Middleware
@@ -28,13 +29,61 @@ mongoose.connect(process.env.MONGO_URL)
 
 
 
-
+// Middleware for CORS
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://chat-app-frontend-peach-three.vercel.app/');
+  next();
+});
 
 
 
 
   const port = process.env.PORT
-app.listen(process.env.PORT,()=>{
+const server = app.listen(process.env.PORT,()=>{
     console.log(`Server is running on : ${port}`);
 });
 
+const io = socket(server, {
+  cors: {
+      origin: "https://chat-app-frontend-peach-three.vercel.app/", // Allow requests from this origin
+      methods: ["GET", "POST"] // Allow these HTTP methods
+  }
+});
+
+let onlineUsers = [];
+
+io.on("connection", (socket) => {
+  console.log("A user connected", socket.id);
+
+  socket.on("addNewUser", (userId) => {
+      if (!onlineUsers.some(user => user.userId === userId)) {
+          onlineUsers.push({
+              userId,
+              socketId: socket.id,
+          });
+          console.log("OnlineUser", onlineUsers);
+
+          io.emit("getonlineUsers", onlineUsers);
+      }
+  });
+
+  // Add message
+  socket.on("sendMessage", (message) => {
+      const user = onlineUsers.find(user => user.userId === message.recipientId);
+
+      if (user) {
+          io.to(user.socketId).emit("getmessage", message);
+          io.to(user.socketId).emit("getnotification", {
+              senderId: message.senderId,
+              isRead: false,
+              date: new Date(),
+          });
+          console.log("Message sent: ", message);
+      }
+  });
+
+  socket.on("disconnect", () => { // Fixed typo here
+      onlineUsers = onlineUsers.filter(user => user.socketId !== socket.id);
+      io.emit("getonlineUsers", onlineUsers);
+  });
+});
